@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: code
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: internal-kubectl
+          volumes:
+          - name: code
+            configMap:
+              name: code
+          containers:
+            - name: internal-kubectl
+              image: ubuntu:latest
+              command: ["bash"]
+              args: ["/mnt/start.sh"]
+              volumeMounts:
+              - name: code
+                mountPath: "/mnt"
+                readOnly: true

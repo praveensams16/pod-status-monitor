@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code
+data: 
+  code.go: |
+    package main
+    
+    import (
+    _	"io/ioutil"
+    	"log"
+    	"os/exec"
+    	"regexp"
+    	"strings"
+    	"os"
+    	"fmt"
+    )
+    
+    func validate() bool {
+    	s := exec.Command("kubectl","get","pods")
+    	x:=0
+    	sw, _ := s.Output()
+    	lst := strings.Split(string(sw), "\n")
+    	for i := 0; i < len(lst); i++ {
+    		if e, _ := regexp.MatchString("(Completed|NAME)", lst[i]); e == false && len(lst[i]) > 0 {
+    			pack := strings.Fields(lst[i])
+    			b := pack[0] + " => " + pack[2] + "\n"
+    			file, err := os.OpenFile("/tmp/info.txt", os.O_APPEND|os.O_WRONLY, 0644)
+    			x=x+1
+                 if err != nil {
+                     log.Fatal(err)
+                 }
+                 //nl := "\nText appended to the second line"
+    	     _, err = fmt.Fprintln(file, b)
+                 if err != nil {
+                     log.Fatal()
+                 }
+             		}
+             	}
+    	if x > 0 {
+    		return true
+    	} else  {
+    		return false
+    	}
+    
+    }
+    
+    func main() {
+    
+       if validate() {
+    	 s := exec.Command("cat","/tmp/info.txt")
+            sw, _ := s.Output()
+    	cmd := exec.Command("sh","run.sh",string(sw))
+    
+        err := cmd.Run()
+    
+        if err != nil {
+            log.Fatal(err)
+        }
+        } else {
+    	    fmt.Println("No error")
+        }
+    }
+  run.sh: |
+    curl -X POST --data-urlencode "payload={\"channel\": \"#testing\", \"username\": \"webhookbot\", \"text\": \"Pod Status \n$* .\", \"icon_emoji\": \":ghost:\"}" "{{ .Values.webhook }}"
+  start.sh: |
+    touch /tmp/info.txt
+    apt-get update
+    apt-get install golang -y 
+    apt install -y curl && \
+    ( cd /tmp && 
+    curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && \
+    chmod +x ./kubectl && \
+    mv ./kubectl /usr/local/bin/kubectl
+    )
+    cd /mnt
+    go run code.go
