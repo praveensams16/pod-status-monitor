@@ -22,7 +22,7 @@ data:
     	sw, _ := s.Output()
     	lst := strings.Split(string(sw), "\n")
     	for i := 0; i < len(lst); i++ {
-    		if e, _ := regexp.MatchString("(Completed|NAME)", lst[i]); e == false && len(lst[i]) > 0 {
+    		if e, _ := regexp.MatchString("(Completed|Running|NAME)", lst[i]); e == false && len(lst[i]) > 0 {
     			pack := strings.Fields(lst[i])
     			b := pack[0] + " => " + pack[2] + "\n"
     			file, err := os.OpenFile("/tmp/info.txt", os.O_APPEND|os.O_WRONLY, 0644)
